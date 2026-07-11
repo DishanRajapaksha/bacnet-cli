@@ -3,15 +3,17 @@ package bacnetclient
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
 
 var (
-	ErrValidation = errors.New("validation error")
-	ErrConnection = errors.New("connection error")
-	ErrRequest    = errors.New("request error")
+	ErrValidation    = errors.New("validation error")
+	ErrConnection    = errors.New("connection error")
+	ErrRequest       = errors.New("request error")
+	ErrWriteRejected = errors.New("write rejected")
 )
 
 type Options struct {
@@ -63,6 +65,8 @@ type PropertyIdentifier struct {
 
 type PropertyValue struct {
 	Timestamp  time.Time          `json:"timestamp"`
+	Point      string             `json:"point,omitempty"`
+	Unit       string             `json:"unit,omitempty"`
 	DeviceID   int                `json:"device_id"`
 	Object     ObjectIdentifier   `json:"object"`
 	Property   PropertyIdentifier `json:"property"`
@@ -89,6 +93,8 @@ type WriteRequest struct {
 }
 
 type WritePlan struct {
+	Point      string             `json:"point,omitempty"`
+	Unit       string             `json:"unit,omitempty"`
 	DeviceID   int                `json:"device_id"`
 	Address    string             `json:"address,omitempty"`
 	Object     ObjectIdentifier   `json:"object"`
@@ -98,6 +104,26 @@ type WritePlan struct {
 	Value      any                `json:"value"`
 	ValueType  string             `json:"value_type"`
 	DryRun     bool               `json:"dry_run"`
+}
+
+type IdentityField struct {
+	Property  PropertyIdentifier `json:"property"`
+	Value     any                `json:"value,omitempty"`
+	ValueType string             `json:"value_type,omitempty"`
+	Error     string             `json:"error,omitempty"`
+}
+
+type DeviceIdentity struct {
+	Timestamp time.Time       `json:"timestamp"`
+	DeviceID  int             `json:"device_id"`
+	Address   string          `json:"address,omitempty"`
+	Fields    []IdentityField `json:"fields"`
+}
+
+type CatalogEntry struct {
+	ID      uint32   `json:"id"`
+	Name    string   `json:"name"`
+	Aliases []string `json:"aliases,omitempty"`
 }
 
 var objectTypes = map[string]uint16{
@@ -126,25 +152,31 @@ var objectTypeNames = map[uint16]string{
 }
 
 var properties = map[string]uint32{
-	"description":                     28,
-	"max-apdu":                        62,
-	"model-name":                      70,
-	"object-identifier":               75,
-	"object-list":                     76,
-	"object-name":                     77,
-	"object-type":                     79,
-	"out-of-service":                  81,
-	"present-value":                   85,
-	"priority-array":                  87,
-	"protocol-object-types-supported": 96,
-	"protocol-services-supported":     97,
-	"relinquish-default":              104,
-	"segmentation-supported":          107,
-	"status-flags":                    111,
-	"system-status":                   112,
-	"units":                           117,
-	"vendor-identifier":               120,
-	"vendor-name":                     121,
+	"application-software-version":      12,
+	"description":                       28,
+	"firmware-revision":                 44,
+	"location":                          58,
+	"max-apdu":                          62,
+	"model-name":                        70,
+	"object-identifier":                 75,
+	"object-list":                       76,
+	"object-name":                       77,
+	"object-type":                       79,
+	"out-of-service":                    81,
+	"present-value":                     85,
+	"priority-array":                    87,
+	"protocol-object-types-supported":   96,
+	"protocol-services-supported":       97,
+	"protocol-version":                  98,
+	"relinquish-default":                104,
+	"segmentation-supported":            107,
+	"status-flags":                      111,
+	"system-status":                     112,
+	"units":                             117,
+	"vendor-identifier":                 120,
+	"vendor-name":                       121,
+	"protocol-revision":                 139,
+	"database-revision":                 155,
 }
 
 var propertyNames = func() map[uint32]string {
@@ -205,6 +237,31 @@ func ObjectTypeName(id uint16) string {
 		return name
 	}
 	return fmt.Sprintf("object-%d", id)
+}
+
+func ObjectTypeCatalog() []CatalogEntry {
+	aliases := map[uint16][]string{}
+	for alias, id := range objectTypes {
+		if alias != objectTypeNames[id] {
+			aliases[id] = append(aliases[id], alias)
+		}
+	}
+	out := make([]CatalogEntry, 0, len(objectTypeNames))
+	for id, name := range objectTypeNames {
+		sort.Strings(aliases[id])
+		out = append(out, CatalogEntry{ID: uint32(id), Name: name, Aliases: aliases[id]})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out
+}
+
+func PropertyCatalog() []CatalogEntry {
+	out := make([]CatalogEntry, 0, len(propertyNames))
+	for id, name := range propertyNames {
+		out = append(out, CatalogEntry{ID: id, Name: name})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out
 }
 
 func ParseWriteValue(kind string, raw string, isNull bool) (any, error) {
