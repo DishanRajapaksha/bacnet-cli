@@ -19,6 +19,7 @@ type Client interface {
 	ReadProperty(Target, ObjectIdentifier, PropertyIdentifier, uint32) (PropertyValue, error)
 	WriteProperty(WriteRequest) error
 	Objects(Target) ([]Object, error)
+	Identify(Target) (DeviceIdentity, error)
 	Routers() ([]string, error)
 }
 
@@ -181,6 +182,10 @@ func (c *nubeClient) ReadProperty(target Target, object ObjectIdentifier, proper
 	if err != nil {
 		return PropertyValue{}, err
 	}
+	return c.readPropertyFromDevice(device, target.DeviceID, object, property, arrayIndex)
+}
+
+func (c *nubeClient) readPropertyFromDevice(device btypes.Device, deviceID int, object ObjectIdentifier, property PropertyIdentifier, arrayIndex uint32) (PropertyValue, error) {
 	request := btypes.PropertyData{Object: btypes.Object{
 		ID:         btypes.ObjectID{Type: btypes.ObjectType(object.Type), Instance: btypes.ObjectInstance(object.Instance)},
 		Properties: []btypes.Property{{Type: btypes.PropertyType(property.ID), ArrayIndex: arrayIndex}},
@@ -199,7 +204,7 @@ func (c *nubeClient) ReadProperty(target Target, object ObjectIdentifier, proper
 	}
 	return PropertyValue{
 		Timestamp:  time.Now().UTC(),
-		DeviceID:   target.DeviceID,
+		DeviceID:   deviceID,
 		Object:     object,
 		Property:   property,
 		ArrayIndex: arrayIndex,
@@ -227,7 +232,7 @@ func (c *nubeClient) WriteProperty(request WriteRequest) error {
 		}},
 	}}
 	if err := c.raw.WriteProperty(device, payload); err != nil {
-		return fmt.Errorf("%w: write property: %v", ErrRequest, err)
+		return fmt.Errorf("%w: write property: %v", ErrWriteRejected, err)
 	}
 	return nil
 }
@@ -259,6 +264,56 @@ func (c *nubeClient) Objects(target Target) ([]Object, error) {
 		return out[i].Type < out[j].Type
 	})
 	return out, nil
+}
+
+func (c *nubeClient) Identify(target Target) (DeviceIdentity, error) {
+	device, err := c.resolveTarget(target)
+	if err != nil {
+		return DeviceIdentity{}, err
+	}
+	identity := DeviceIdentity{
+		Timestamp: time.Now().UTC(),
+		DeviceID:  target.DeviceID,
+		Address:   device.Ip,
+	}
+	object := ObjectIdentifier{Type: 8, TypeName: "device", Instance: uint32(target.DeviceID)}
+	propertyNames := []string{
+		"object-identifier",
+		"object-name",
+		"vendor-name",
+		"vendor-identifier",
+		"model-name",
+		"firmware-revision",
+		"application-software-version",
+		"location",
+		"description",
+		"protocol-version",
+		"protocol-revision",
+		"database-revision",
+		"max-apdu",
+		"segmentation-supported",
+	}
+	successes := 0
+	for _, name := range propertyNames {
+		property, parseErr := ParsePropertyIdentifier(name)
+		if parseErr != nil {
+			return identity, parseErr
+		}
+		value, readErr := c.readPropertyFromDevice(device, target.DeviceID, object, property, ^uint32(0))
+		field := IdentityField{Property: property}
+		if readErr != nil {
+			field.Error = readErr.Error()
+		} else {
+			field.Value = value.Value
+			field.ValueType = value.ValueType
+			successes++
+		}
+		identity.Fields = append(identity.Fields, field)
+	}
+	if successes == 0 {
+		return identity, fmt.Errorf("%w: device %d returned no identity properties", ErrRequest, target.DeviceID)
+	}
+	return identity, nil
 }
 
 func (c *nubeClient) Routers() ([]string, error) {
