@@ -47,6 +47,10 @@ func (a *App) RunV2(args []string) int {
 		err = a.watchPoints(args[1:])
 	case "identify":
 		err = a.identify(args[1:])
+	case "inventory":
+		err = a.inventory(args[1:])
+	case "generate-config":
+		err = a.generateConfig(args[1:])
 	case "object-types":
 		err = a.objectTypes(args[1:])
 	case "properties":
@@ -84,6 +88,8 @@ Additional commands:
   watch-point      Poll a configured named point
   watch-points     Poll selected or all configured points in cycles
   identify         Read standard identity properties from a device
+  inventory        Discover devices and collect common identity metadata
+  generate-config  Discover devices and emit reusable YAML configuration
   object-types     List supported object type names and aliases
   properties       List supported property names and identifiers
 
@@ -98,6 +104,8 @@ Examples:
   bacnet-cli watch-point supply_air_temperature --interval 2s --format jsonl
   bacnet-cli watch-points --device ahu --interval 5s --format csv
   bacnet-cli identify ahu
+  bacnet-cli inventory --format csv
+  bacnet-cli generate-config --output discovered.yaml
   bacnet-cli object-types
   bacnet-cli properties --format csv`)
 }
@@ -179,7 +187,7 @@ func extendedCommandSupportsGlobals(command string) bool {
 		return true
 	}
 	switch command {
-	case "devices", "points", "read-point", "read-points", "write-point", "watch-point", "watch-points", "identify", "object-types", "properties":
+	case "devices", "points", "read-point", "read-points", "write-point", "watch-point", "watch-points", "identify", "inventory", "generate-config", "object-types", "properties":
 		return true
 	default:
 		return false
