@@ -1,4 +1,4 @@
-name: Format capture
+name: Format diagnostics
 
 on:
   pull_request:
@@ -16,11 +16,18 @@ jobs:
           go-version: '1.23.x'
           cache: false
       - name: Format source
-        run: gofmt -w $(find . -name '*.go' -type f)
-      - name: Upload formatted source
+        shell: bash
+        run: |
+          set +e
+          gofmt -w $(find . -name '*.go' -type f) > format.log 2>&1
+          echo $? > format.status
+          exit 0
+      - name: Upload formatted source and log
         uses: actions/upload-artifact@v4
         with:
-          name: bacnet-cli-formatted-source
+          name: bacnet-cli-format-diagnostics
           path: |
+            format.log
+            format.status
             main.go
             internal/**/*.go
