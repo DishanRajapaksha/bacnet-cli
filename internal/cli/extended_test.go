@@ -131,3 +131,37 @@ func TestObjectTypesCatalog(t *testing.T) {
 		t.Fatalf("code=%d output=%q errors=%q", code, out.String(), errOut.String())
 	}
 }
+
+func TestGlobalFormatBeforeCatalog(t *testing.T) {
+	var out, errOut bytes.Buffer
+	code := NewAppWithFactory(&out, &errOut, &fakeFactory{}).RunV2([]string{"--format", "json", "properties"})
+	if code != 0 || !strings.Contains(out.String(), "present-value") {
+		t.Fatalf("code=%d output=%q errors=%q", code, out.String(), errOut.String())
+	}
+}
+
+func TestDirectWriteAcceptsExplicitDryRun(t *testing.T) {
+	factory := &fakeFactory{client: pointClient{}}
+	var out, errOut bytes.Buffer
+	code := NewAppWithFactory(&out, &errOut, factory).RunV2([]string{
+		"write", "--device-id", "100", "--object", "analog-output:1",
+		"--property", "present-value", "--type", "float32", "--value", "21.5", "--dry-run",
+	})
+	if code != 0 {
+		t.Fatalf("code=%d errors=%q", code, errOut.String())
+	}
+	if factory.opened != 0 || !strings.Contains(out.String(), "true") {
+		t.Fatalf("opened=%d output=%q", factory.opened, out.String())
+	}
+}
+
+func TestDirectWriteRejectsDryRunAndYes(t *testing.T) {
+	var out, errOut bytes.Buffer
+	code := NewAppWithFactory(&out, &errOut, &fakeFactory{}).RunV2([]string{
+		"write", "--device-id", "100", "--object", "analog-output:1",
+		"--property", "present-value", "--type", "float32", "--value", "21.5", "--dry-run", "--yes",
+	})
+	if code != exitConfigError || !strings.Contains(errOut.String(), "cannot be used together") {
+		t.Fatalf("code=%d output=%q errors=%q", code, out.String(), errOut.String())
+	}
+}
