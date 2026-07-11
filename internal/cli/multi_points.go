@@ -34,17 +34,17 @@ func (f *stringListFlag) Set(value string) error {
 }
 
 type pointSample struct {
-	Timestamp time.Time                         `json:"timestamp"`
-	Cycle     int                               `json:"cycle,omitempty"`
-	Point     string                            `json:"point"`
-	Device    string                            `json:"device"`
-	DeviceID  int                               `json:"device_id"`
-	Object    bacnetclient.ObjectIdentifier     `json:"object"`
-	Property  bacnetclient.PropertyIdentifier   `json:"property"`
-	Value     any                               `json:"value"`
-	ValueType string                            `json:"value_type,omitempty"`
-	Unit      string                            `json:"unit,omitempty"`
-	Error     string                            `json:"error,omitempty"`
+	Timestamp time.Time                       `json:"timestamp"`
+	Cycle     int                             `json:"cycle,omitempty"`
+	Point     string                          `json:"point"`
+	Device    string                          `json:"device"`
+	DeviceID  int                             `json:"device_id"`
+	Object    bacnetclient.ObjectIdentifier   `json:"object"`
+	Property  bacnetclient.PropertyIdentifier `json:"property"`
+	Value     any                             `json:"value"`
+	ValueType string                          `json:"value_type,omitempty"`
+	Unit      string                          `json:"unit,omitempty"`
+	Error     string                          `json:"error,omitempty"`
 }
 
 func (a *App) readPoints(args []string) error {
