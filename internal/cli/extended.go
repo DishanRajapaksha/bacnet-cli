@@ -37,10 +37,14 @@ func (a *App) RunV2(args []string) int {
 		err = a.points(args[1:])
 	case "read-point":
 		err = a.readPoint(args[1:])
+	case "read-points":
+		err = a.readPoints(args[1:])
 	case "write-point":
 		err = a.writePoint(args[1:])
 	case "watch-point":
 		err = a.watchPoint(args[1:])
+	case "watch-points":
+		err = a.watchPoints(args[1:])
 	case "identify":
 		err = a.identify(args[1:])
 	case "object-types":
@@ -75,8 +79,10 @@ Additional commands:
   devices          List configured named BACnet devices
   points           List configured named BACnet points
   read-point       Read a configured named point
+  read-points      Read selected or all configured points in one session
   write-point      Write a configured named point; dry-run unless --yes is supplied
   watch-point      Poll a configured named point
+  watch-points     Poll selected or all configured points in cycles
   identify         Read standard identity properties from a device
   object-types     List supported object type names and aliases
   properties       List supported property names and identifiers
@@ -85,9 +91,12 @@ Examples:
   bacnet-cli devices --profile local
   bacnet-cli points --format json
   bacnet-cli read-point supply_air_temperature
+  bacnet-cli read-points --device ahu
+  bacnet-cli read-points --point supply_air_temperature --point cooling_setpoint --format json
   bacnet-cli write-point cooling_setpoint --value 21.5
   bacnet-cli write-point cooling_setpoint --value 21.5 --yes
   bacnet-cli watch-point supply_air_temperature --interval 2s --format jsonl
+  bacnet-cli watch-points --device ahu --interval 5s --format csv
   bacnet-cli identify ahu
   bacnet-cli object-types
   bacnet-cli properties --format csv`)
@@ -170,7 +179,7 @@ func extendedCommandSupportsGlobals(command string) bool {
 		return true
 	}
 	switch command {
-	case "devices", "points", "read-point", "write-point", "watch-point", "identify", "object-types", "properties":
+	case "devices", "points", "read-point", "read-points", "write-point", "watch-point", "watch-points", "identify", "object-types", "properties":
 		return true
 	default:
 		return false
