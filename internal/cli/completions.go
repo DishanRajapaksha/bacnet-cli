@@ -7,7 +7,9 @@ import (
 
 var commands = []string{
 	"init-config", "validate-config", "test-connection", "status", "discover",
-	"read", "objects", "write", "watch", "routers", "completions", "version", "help",
+	"devices", "points", "read", "read-point", "objects", "identify",
+	"write", "write-point", "watch", "watch-point", "routers",
+	"object-types", "properties", "completions", "version", "help",
 }
 
 func (a *App) completions(args []string) error {
