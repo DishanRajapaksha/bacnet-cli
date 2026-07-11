@@ -16,6 +16,8 @@ The command structure follows the sibling industrial CLIs:
 
 - BACnet/IP device discovery using Who-Is and I-Am
 - connection diagnostics
+- fleet inventory with identity enrichment
+- generated YAML device configuration
 - single-property reads and writes
 - configured named devices and points
 - named point reads, writes and polling
@@ -45,6 +47,8 @@ go build -o bacnet-cli .
 ./bacnet-cli init-config
 ./bacnet-cli validate-config --profile local
 ./bacnet-cli discover --interface en0
+./bacnet-cli inventory --interface en0
+./bacnet-cli generate-config --interface en0 --output discovered.yaml
 ./bacnet-cli devices
 ./bacnet-cli points
 ./bacnet-cli read-points
@@ -87,6 +91,49 @@ bacnet-cli identify \
 ```
 
 The command reads standard device-object properties such as object name, vendor, model, firmware, application version, protocol revision, database revision and segmentation. Unsupported optional properties are reported per field instead of aborting the entire command.
+
+### Inventory a BACnet network
+
+`inventory` combines Who-Is discovery with identity inspection for every discovered device while keeping one BACnet client session open:
+
+```bash
+bacnet-cli inventory
+bacnet-cli inventory --format json
+bacnet-cli inventory --low 1000 --high 1999 --format csv
+bacnet-cli inventory --network 10
+```
+
+The command reports addressing, vendor identifier, object name, vendor, model, firmware, location, APDU and segmentation details. Identity inspection can be disabled when only discovery metadata is needed:
+
+```bash
+bacnet-cli inventory --identify=false
+```
+
+If one device is discovered but identity reads fail, its discovery information remains in the output with an `error` field. The command then returns exit code 4. Use `--fail-fast` to stop after the first identity failure.
+
+### Generate device configuration
+
+`generate-config` discovers devices and emits a valid YAML configuration containing reusable named device definitions:
+
+```bash
+bacnet-cli generate-config
+bacnet-cli generate-config --network 10
+bacnet-cli generate-config --output discovered.yaml
+```
+
+The default output is stdout, which makes review and shell redirection straightforward. File output refuses to overwrite an existing path unless `--force` is supplied:
+
+```bash
+bacnet-cli generate-config --output discovered.yaml --force
+```
+
+Device object names are normalised into configuration-safe names. Duplicate names receive deterministic device-instance suffixes. When identity is unavailable, the fallback is `device_<instance>`:
+
+```bash
+bacnet-cli generate-config --identify=false --output discovered.yaml
+```
+
+Overwrite refusal happens before a BACnet socket is opened. When some identity reads fail, the generated configuration is still written with fallback names and the command returns exit code 4.
 
 ## Direct property commands
 
@@ -376,6 +423,8 @@ text, jsonl, csv
 
 Multi-point snapshots and streams include the point name, configured device name, BACnet device instance, object, property, value, unit, value type and any per-point error.
 
+Inventory snapshots include discovered addressing, identity metadata, protocol information and any per-device identity error. `generate-config` always emits YAML rather than using the snapshot format setting.
+
 ## Exit codes
 
 | Code | Meaning |
@@ -384,7 +433,7 @@ Multi-point snapshots and streams include the point name, configured device name
 | 1 | General error |
 | 2 | Usage or configuration error |
 | 3 | Transport or connection error |
-| 4 | BACnet request or protocol error, including partial multi-point failures |
+| 4 | BACnet request or protocol error, including partial point or inventory failures |
 | 7 | Write or control rejected |
 | 8 | Timeout |
 | 9 | Output or formatting error |
