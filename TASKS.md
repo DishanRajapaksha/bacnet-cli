@@ -42,8 +42,17 @@
 - [x] Add fail-fast mode and shared exit-code behaviour.
 - [x] Use one BACnet session with sequential ReadProperty calls.
 
+## Phase 7: Fleet inventory and generated configuration
+
+- [x] Add `inventory` with discovery filters and identity enrichment.
+- [x] Preserve discovered devices when identity reads partially fail.
+- [x] Add `generate-config` with YAML output and deterministic device names.
+- [x] Add collision handling, discovery-only generation and overwrite protection.
+- [x] Keep inventory and generation within one BACnet session.
+
 ## Later phases
 
+- [ ] Add optional object-to-point template generation after broader device testing.
 - [ ] Add COV subscriptions when the client dependency provides dependable support.
 - [ ] Add event notification inspection when the client dependency provides dependable support.
 - [ ] Add ReadPropertyMultiple only after interoperability testing against real devices.
