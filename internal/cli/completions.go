@@ -7,8 +7,8 @@ import (
 
 var commands = []string{
 	"init-config", "validate-config", "test-connection", "status", "discover",
-	"devices", "points", "read", "read-point", "read-points", "objects", "identify",
-	"write", "write-point", "watch", "watch-point", "watch-points", "routers",
+	"devices", "points", "read", "read-point", "read-points", "objects", "identify", "inventory",
+	"generate-config", "write", "write-point", "watch", "watch-point", "watch-points", "routers",
 	"object-types", "properties", "completions", "version", "help",
 }
 
