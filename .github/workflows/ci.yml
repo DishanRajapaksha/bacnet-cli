@@ -1,44 +1,29 @@
-name: CI diagnostics
+name: CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
 
 permissions:
   contents: read
 
 jobs:
-  diagnose:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23.x'
-          cache: false
-      - name: Resolve modules
-        run: go mod tidy
-      - name: Run diagnostics
-        shell: bash
-        run: |
-          set +e
-          gofmt -l . > formatting.log 2>&1
-          formatting_status=$?
-          go vet ./... > vet.log 2>&1
-          vet_status=$?
-          go test -race ./... > test.log 2>&1
-          test_status=$?
-          go build ./... > build.log 2>&1
-          build_status=$?
-          printf 'formatting=%d\nvet=%d\ntest=%d\nbuild=%d\n' "$formatting_status" "$vet_status" "$test_status" "$build_status" > status.log
-          exit 0
-      - name: Upload diagnostics
-        uses: actions/upload-artifact@v4
-        with:
-          name: bacnet-cli-diagnostics
-          path: |
-            status.log
-            formatting.log
-            vet.log
-            test.log
-            build.log
-            go.sum
+          cache: true
+      - name: Download dependencies
+        run: go mod download
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+      - name: Vet
+        run: go vet ./...
+      - name: Test
+        run: go test -race ./...
+      - name: Build
+        run: go build ./...
