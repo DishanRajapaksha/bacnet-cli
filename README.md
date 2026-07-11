@@ -19,6 +19,7 @@ The command structure follows the sibling industrial CLIs:
 - single-property reads and writes
 - configured named devices and points
 - named point reads, writes and polling
+- multi-point reads and polling through one BACnet session
 - device identity inspection
 - device object-list inspection
 - BACnet object-type and property catalogues
@@ -46,6 +47,7 @@ go build -o bacnet-cli .
 ./bacnet-cli discover --interface en0
 ./bacnet-cli devices
 ./bacnet-cli points
+./bacnet-cli read-points
 ```
 
 On Linux, the interface is commonly `eth0`, `ens18` or a similar predictable-network name. When neither `--interface` nor `--local-ip` is supplied, the CLI selects the first active non-loopback IPv4 interface.
@@ -252,6 +254,31 @@ bacnet-cli read-point supply_air_temperature
 bacnet-cli --profile local --format json read-point supply_air_temperature
 ```
 
+### Read several named points
+
+With no selectors, every configured point is read in deterministic name order:
+
+```bash
+bacnet-cli read-points
+bacnet-cli --format json read-points
+```
+
+Select points explicitly by repeating `--point`:
+
+```bash
+bacnet-cli read-points \
+  --point supply_air_temperature \
+  --point cooling_setpoint
+```
+
+Select every point belonging to one configured device:
+
+```bash
+bacnet-cli read-points --device ahu --format csv
+```
+
+The command opens one BACnet client session and performs sequential ReadProperty requests. It does not claim to use ReadPropertyMultiple. A failed point remains in the output with an `error` field, successful point values are preserved, and the command exits with code 4 when any read fails. Use `--fail-fast` when continuing would be undesirable.
+
 ### Watch a named point
 
 ```bash
@@ -262,6 +289,18 @@ bacnet-cli watch-point supply_air_temperature \
 ```
 
 `--count` and `--duration` can be used to bound polling. Zero means no limit.
+
+### Watch several named points
+
+```bash
+bacnet-cli watch-points \
+  --device ahu \
+  --interval 5s \
+  --count 12 \
+  --format jsonl
+```
+
+Specific points can be selected with repeated `--point` flags. Each interval is one complete polling cycle over the selected points. Text and JSON Lines emit one sample per point. CSV emits one header for the entire stream. Errors are emitted as samples and produce exit code 4 after the bounded watch completes. `--fail-fast` stops immediately after the first failed read.
 
 ### Write a named point
 
@@ -335,6 +374,8 @@ Streaming commands support:
 text, jsonl, csv
 ```
 
+Multi-point snapshots and streams include the point name, configured device name, BACnet device instance, object, property, value, unit, value type and any per-point error.
+
 ## Exit codes
 
 | Code | Meaning |
@@ -343,7 +384,7 @@ text, jsonl, csv
 | 1 | General error |
 | 2 | Usage or configuration error |
 | 3 | Transport or connection error |
-| 4 | BACnet request or protocol error |
+| 4 | BACnet request or protocol error, including partial multi-point failures |
 | 7 | Write or control rejected |
 | 8 | Timeout |
 | 9 | Output or formatting error |
