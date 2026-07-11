@@ -202,6 +202,7 @@ func renderRows(w io.Writer, format string, headers []string, rows [][]string) e
 			if err := output.WriteText(w, strings.Join(row, " ")); err != nil {
 				return err
 			}
+		}
 		return nil
 	default:
 		return output.WriteTable(w, headers, rows)
