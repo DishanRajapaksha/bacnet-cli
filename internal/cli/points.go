@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"strings"
 	"syscall"
 	"time"
 
@@ -77,7 +78,7 @@ func (a *App) readPoint(args []string) error {
 	if err != nil {
 		return err
 	}
-	return renderProperty(a.out, cfg.Output.Format, devicemap.ApplyPoint(resolved.Point, value))
+	return renderPointValue(a.out, cfg.Output.Format, devicemap.ApplyPoint(resolved.Point, value))
 }
 
 func (a *App) writePoint(args []string) error {
@@ -141,7 +142,7 @@ func (a *App) writePoint(args []string) error {
 		DryRun:     !*yes,
 	}
 	if !*yes {
-		return renderWritePlan(a.out, cfg.Output.Format, plan)
+		return renderPointWritePlan(a.out, cfg.Output.Format, plan)
 	}
 	client, _, err := a.open(common)
 	if err != nil {
@@ -155,7 +156,7 @@ func (a *App) writePoint(args []string) error {
 		return err
 	}
 	plan.DryRun = false
-	return renderWritePlan(a.out, cfg.Output.Format, plan)
+	return renderPointWritePlan(a.out, cfg.Output.Format, plan)
 }
 
 func (a *App) watchPoint(args []string) error {
@@ -233,7 +234,7 @@ func (a *App) watchPoint(args []string) error {
 func (a *App) identify(args []string) error {
 	name := ""
 	flagArgs := args
-	if len(args) > 0 && args[0] != "--help" && args[0] != "-h" && args[0][0] != '-' {
+	if len(args) > 0 && args[0] != "--help" && args[0] != "-h" && !strings.HasPrefix(args[0], "-") {
 		name = args[0]
 		flagArgs = args[1:]
 	}
