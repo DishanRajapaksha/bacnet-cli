@@ -31,7 +31,10 @@ func (fakeClient) ReadProperty(bacnetclient.Target, bacnetclient.ObjectIdentifie
 }
 func (fakeClient) WriteProperty(bacnetclient.WriteRequest) error              { return nil }
 func (fakeClient) Objects(bacnetclient.Target) ([]bacnetclient.Object, error) { return nil, nil }
-func (fakeClient) Routers() ([]string, error)                                 { return nil, nil }
+func (fakeClient) Identify(bacnetclient.Target) (bacnetclient.DeviceIdentity, error) {
+	return bacnetclient.DeviceIdentity{}, nil
+}
+func (fakeClient) Routers() ([]string, error) { return nil, nil }
 
 func TestHelp(t *testing.T) {
 	var out, errOut bytes.Buffer
