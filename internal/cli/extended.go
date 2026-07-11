@@ -48,7 +48,7 @@ func (a *App) RunV2(args []string) int {
 	case "properties":
 		err = a.properties(args[1:])
 	case "write":
-		err = a.write(args[1:])
+		err = a.writeV2(args[1:])
 	default:
 		return a.Run(args)
 	}
@@ -170,7 +170,7 @@ func extendedCommandSupportsGlobals(command string) bool {
 		return true
 	}
 	switch command {
-	case "devices", "points", "read-point", "write-point", "watch-point", "identify":
+	case "devices", "points", "read-point", "write-point", "watch-point", "identify", "object-types", "properties":
 		return true
 	default:
 		return false
