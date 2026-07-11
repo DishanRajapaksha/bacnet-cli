@@ -10,20 +10,24 @@ The command structure follows the sibling industrial CLIs:
 - text, JSON Lines and CSV streams
 - writes are dry-run by default and require `--yes`
 - stable exit-code meanings across the CLI family
+- reusable named devices and points for operator-facing workflows
 
 ## Features
 
 - BACnet/IP device discovery using Who-Is and I-Am
 - connection diagnostics
-- single-property reads
+- single-property reads and writes
+- configured named devices and points
+- named point reads, writes and polling
+- device identity inspection
 - device object-list inspection
-- polling-based property watches
-- property writes with BACnet priority and null relinquish support
+- BACnet object-type and property catalogues
+- BACnet priority and null relinquish support
 - BACnet router discovery
 - YAML profiles
 - Bash and Zsh completions
 
-This first release intentionally omits COV subscriptions, events and ReadPropertyMultiple. The underlying Go implementation does not yet provide those areas with the same confidence as Who-Is, ReadProperty and WriteProperty.
+COV subscriptions, events and general ReadPropertyMultiple commands remain deliberately excluded. The underlying Go implementation does not yet provide those areas with the same confidence as Who-Is, ReadProperty and WriteProperty.
 
 ## Install
 
@@ -40,11 +44,13 @@ go build -o bacnet-cli .
 ./bacnet-cli init-config
 ./bacnet-cli validate-config --profile local
 ./bacnet-cli discover --interface en0
+./bacnet-cli devices
+./bacnet-cli points
 ```
 
 On Linux, the interface is commonly `eth0`, `ens18` or a similar predictable-network name. When neither `--interface` nor `--local-ip` is supplied, the CLI selects the first active non-loopback IPv4 interface.
 
-## Commands
+## Discovery and diagnostics
 
 ### Discover devices
 
@@ -60,6 +66,27 @@ bacnet-cli test-connection --device-id 1234
 ```
 
 Without `--device-id`, any I-Am response counts as success.
+
+### Identify a device
+
+Use a configured device name:
+
+```bash
+bacnet-cli identify ahu
+bacnet-cli identify ahu --format json
+```
+
+Or supply a target directly:
+
+```bash
+bacnet-cli identify \
+  --device-id 1234 \
+  --device-address 192.0.2.20
+```
+
+The command reads standard device-object properties such as object name, vendor, model, firmware, application version, protocol revision, database revision and segmentation. Unsupported optional properties are reported per field instead of aborting the entire command.
+
+## Direct property commands
 
 ### Read a property
 
@@ -148,7 +175,9 @@ bacnet-cli write \
 
 Supported write types are `string`, `bool`, `uint`, `int`, `float32` and `float64`.
 
-## Configuration
+## Named devices and points
+
+Named devices keep BACnet addressing details in configuration. Named points then reference a device, object and property.
 
 ```yaml
 connection:
@@ -157,6 +186,38 @@ connection:
   timeout: 5s
 output:
   format: table
+
+devices:
+  - name: ahu
+    device_id: 1234
+    address: 192.0.2.20
+    port: 47808
+    max_apdu: 1476
+    segmentation: 3
+
+  - name: routed_vav
+    device_id: 2001
+    network: 10
+    mstp_mac: 7
+    max_apdu: 480
+    segmentation: 3
+
+points:
+  - name: supply_air_temperature
+    device: ahu
+    object: analog-input:1
+    property: present-value
+    unit: °C
+
+  - name: cooling_setpoint
+    device: ahu
+    object: analog-value:1
+    property: present-value
+    type: float32
+    unit: °C
+    writable: true
+    priority: 16
+
 default_profile: local
 profiles:
   local:
@@ -173,7 +234,92 @@ profiles:
       timeout: 5s
 ```
 
-Use `local_ip` instead of `interface` when binding by address is more convenient. Do not set both.
+An omitted device address causes the CLI to discover the device by instance number. Use an explicit address when predictable unicast traffic matters. Routed MS/TP targets use `network` and `mstp_mac`.
+
+### List configured devices and points
+
+```bash
+bacnet-cli devices
+bacnet-cli devices --format json
+bacnet-cli points
+bacnet-cli points --format csv
+```
+
+### Read a named point
+
+```bash
+bacnet-cli read-point supply_air_temperature
+bacnet-cli --profile local --format json read-point supply_air_temperature
+```
+
+### Watch a named point
+
+```bash
+bacnet-cli watch-point supply_air_temperature \
+  --interval 2s \
+  --duration 30s \
+  --format jsonl
+```
+
+`--count` and `--duration` can be used to bound polling. Zero means no limit.
+
+### Write a named point
+
+Named point writes require `writable: true` and a configured `type`. They remain dry-run by default:
+
+```bash
+bacnet-cli write-point cooling_setpoint --value 21.5
+```
+
+Send after reviewing the plan:
+
+```bash
+bacnet-cli write-point cooling_setpoint --value 21.5 --yes
+```
+
+Override the configured priority when necessary:
+
+```bash
+bacnet-cli write-point cooling_setpoint --value 22.0 --priority 8 --yes
+```
+
+Relinquish the selected priority:
+
+```bash
+bacnet-cli write-point cooling_setpoint --null --yes
+```
+
+## Local catalogues
+
+List accepted object names, aliases and numeric identifiers:
+
+```bash
+bacnet-cli object-types
+bacnet-cli object-types --format json
+```
+
+List accepted property names and numeric identifiers:
+
+```bash
+bacnet-cli properties
+bacnet-cli properties --format csv
+```
+
+These commands are local and do not open a BACnet socket.
+
+## Configuration rules
+
+- Device names and point names must be unique.
+- Points must reference a configured device.
+- Objects use `TYPE:INSTANCE`, for example `analog-input:1` or `0:1`.
+- The default point property is `present-value`.
+- The default array index is BACnet `ARRAY_ALL`.
+- Writable points require a write type.
+- The default write priority is 16.
+- The default device port is 47808.
+- The default maximum APDU is 1476.
+- The default segmentation value is 3, meaning no segmentation.
+- Use `local_ip` instead of `interface` when binding by address is more convenient. Do not set both.
 
 ## Output contract
 
@@ -204,7 +350,7 @@ text, jsonl, csv
 
 ## Safety
 
-BACnet writes can alter physical equipment. The CLI therefore refuses to transmit a write unless `--yes` is present. Use a test network, confirm object identifiers and priorities, and keep a known route back to the original value. Buildings are famously poor at accepting pull requests.
+BACnet writes can alter physical equipment. The CLI refuses to transmit a write unless `--yes` is present, and named points must also be marked writable. Use a test network, confirm object identifiers and priorities, and keep a known route back to the original value. Buildings are famously poor at accepting pull requests.
 
 ## Library
 
