@@ -1,5 +1,5 @@
-github.com/DishanRajapaksha/industrial-cli-kit v0.1.0 h1:yXU8suAVVnjzhpL+u8HwcdAgBrhuOpBLxjNkKKMI/h4=
-github.com/DishanRajapaksha/industrial-cli-kit v0.1.0/go.mod h1:VMMmT0qKjdZ8kJE88HFZDJDa4gftgSX7gXwQTY4mtuM=
+github.com/DishanRajapaksha/industrial-cli-kit v0.0.0-20260712085609-0cf30ef92957 h1:dusI+cJaPjei6qwF2R741h2/qno6OBvj44ijKhPCCE4=
+github.com/DishanRajapaksha/industrial-cli-kit v0.0.0-20260712085609-0cf30ef92957/go.mod h1:VMMmT0qKjdZ8kJE88HFZDJDa4gftgSX7gXwQTY4mtuM=
 github.com/NubeDev/bacnet v0.0.0-20230505084459-e8c6afa8646f h1:N4U91nq7UrqPgzgnzKexJvMVzjhZ/wjGkZW72xRWV50=
 github.com/NubeDev/bacnet v0.0.0-20230505084459-e8c6afa8646f/go.mod h1:F3xK4sMMAgx4kKufhKwKU7jGx3kK6hVd3Ag8Qnr8rw8=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

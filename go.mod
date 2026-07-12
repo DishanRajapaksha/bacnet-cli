@@ -3,7 +3,7 @@ module github.com/DishanRajapaksha/bacnet-cli
 go 1.23
 
 require (
-	github.com/DishanRajapaksha/industrial-cli-kit v0.1.0
+	github.com/DishanRajapaksha/industrial-cli-kit v0.0.0-20260712085609-0cf30ef92957
 	github.com/NubeDev/bacnet v0.0.0-20230505084459-e8c6afa8646f
 	gopkg.in/yaml.v3 v3.0.1
 )
