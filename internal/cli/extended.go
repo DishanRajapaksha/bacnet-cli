@@ -5,9 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/DishanRajapaksha/bacnet-cli/internal/bacnetclient"
+	"github.com/DishanRajapaksha/industrial-cli-kit/command"
 )
 
 func MainV2() {
@@ -111,85 +111,5 @@ Examples:
 }
 
 func normaliseExtendedGlobalFlags(args []string) ([]string, error) {
-	if len(args) == 0 {
-		return args, nil
-	}
-	var globals []string
-	for i := 0; i < len(args); i++ {
-		arg := args[i]
-		if arg == "--" {
-			if i+1 >= len(args) {
-				return nil, errors.New("command is required after --")
-			}
-			return appendExtendedGlobals(args[i+1:], globals), nil
-		}
-		if !strings.HasPrefix(arg, "-") || arg == "-" {
-			return appendExtendedGlobals(args[i:], globals), nil
-		}
-		if arg == "--help" || arg == "-h" || arg == "--version" || arg == "-v" {
-			return args[i:], nil
-		}
-		name, inlineValue, hasInlineValue := strings.Cut(arg, "=")
-		switch name {
-		case "--verbose", "--debug":
-			if hasInlineValue {
-				return nil, fmt.Errorf("%s does not take a value", name)
-			}
-			globals = append(globals, name)
-		case "--config", "--profile", "--interface", "--local-ip", "--port", "--subnet-cidr", "--timeout", "--format":
-			value := inlineValue
-			if !hasInlineValue {
-				i++
-				if i >= len(args) || strings.HasPrefix(args[i], "-") {
-					return nil, fmt.Errorf("%s requires a value", name)
-				}
-				value = args[i]
-			}
-			if value == "" {
-				return nil, fmt.Errorf("%s requires a value", name)
-			}
-			globals = append(globals, name, value)
-		default:
-			return nil, fmt.Errorf("unknown global flag %q", name)
-		}
-	}
-	return nil, errors.New("command is required")
-}
-
-func appendExtendedGlobals(args []string, globals []string) []string {
-	if len(args) == 0 || len(globals) == 0 || !extendedCommandSupportsGlobals(args[0]) {
-		return args
-	}
-	out := make([]string, 0, len(args)+len(globals))
-	out = append(out, args[0])
-	if extendedCommandTakesNameBeforeFlags(args[0]) && len(args) > 1 && !strings.HasPrefix(args[1], "-") {
-		out = append(out, args[1])
-		out = append(out, globals...)
-		out = append(out, args[2:]...)
-		return out
-	}
-	out = append(out, globals...)
-	out = append(out, args[1:]...)
-	return out
-}
-
-func extendedCommandTakesNameBeforeFlags(command string) bool {
-	switch command {
-	case "read-point", "write-point", "watch-point", "identify":
-		return true
-	default:
-		return false
-	}
-}
-
-func extendedCommandSupportsGlobals(command string) bool {
-	if commandSupportsGlobals(command) {
-		return true
-	}
-	switch command {
-	case "devices", "points", "read-point", "read-points", "write-point", "watch-point", "watch-points", "identify", "inventory", "generate-config", "object-types", "properties":
-		return true
-	default:
-		return false
-	}
+	return command.NormalizeGlobalFlagsForRegistry(args, cliRegistry)
 }
