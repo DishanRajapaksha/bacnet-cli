@@ -13,7 +13,7 @@ import (
 func TestSharedCommandContract(t *testing.T) {
 	contracttest.Baseline(t, func(args ...string) contracttest.Result {
 		var out, errOut bytes.Buffer
-		code := NewAppWithFactory(&out, &errOut, &fakeFactory{client: fakeClient{}}).Run(args)
+		code := NewAppWithFactory(&out, &errOut, &fakeFactory{client: fakeClient{}}).RunV2(args)
 		return contracttest.Result{Code: code, Stdout: out.String(), Stderr: errOut.String()}
 	})
 }
@@ -47,8 +47,8 @@ func (fakeClient) Routers() ([]string, error) { return nil, nil }
 
 func TestHelp(t *testing.T) {
 	var out, errOut bytes.Buffer
-	code := NewApp(&out, &errOut).Run([]string{"help"})
-	if code != 0 || !strings.Contains(out.String(), "discover") {
+	code := NewApp(&out, &errOut).RunV2([]string{"help"})
+	if code != 0 || !strings.Contains(out.String(), "discover") || !strings.Contains(out.String(), "inventory") {
 		t.Fatalf("code=%d output=%q errors=%q", code, out.String(), errOut.String())
 	}
 }
@@ -56,7 +56,7 @@ func TestHelp(t *testing.T) {
 func TestGlobalFlagsBeforeCommand(t *testing.T) {
 	factory := &fakeFactory{client: fakeClient{}}
 	var out, errOut bytes.Buffer
-	code := NewAppWithFactory(&out, &errOut, factory).Run([]string{"--format", "json", "discover", "--low", "100", "--high", "100"})
+	code := NewAppWithFactory(&out, &errOut, factory).RunV2([]string{"--format", "json", "discover", "--low", "100", "--high", "100"})
 	if code != 0 {
 		t.Fatalf("code=%d errors=%q", code, errOut.String())
 	}
@@ -68,7 +68,7 @@ func TestGlobalFlagsBeforeCommand(t *testing.T) {
 func TestWriteIsDryRunByDefault(t *testing.T) {
 	factory := &fakeFactory{client: fakeClient{}}
 	var out, errOut bytes.Buffer
-	code := NewAppWithFactory(&out, &errOut, factory).Run([]string{
+	code := NewAppWithFactory(&out, &errOut, factory).RunV2([]string{
 		"write", "--device-id", "100", "--object", "analog-output:1",
 		"--property", "present-value", "--type", "float32", "--value", "21.5",
 	})
