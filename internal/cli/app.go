@@ -131,56 +131,7 @@ func mapExitCode(err error) int {
 }
 
 func (a *App) printUsage() {
-	fmt.Fprintln(a.out, `bacnet-cli is a script-friendly BACnet/IP command-line client.
-
-Usage:
-  bacnet-cli [global flags] <command> [flags]
-  bacnet-cli init-config
-  bacnet-cli validate-config --profile local
-  bacnet-cli discover --low 0 --high 4194303
-  bacnet-cli test-connection --device-id 1234
-  bacnet-cli read --device-id 1234 --object analog-input:1 --property present-value
-  bacnet-cli objects --device-id 1234
-  bacnet-cli write --device-id 1234 --object analog-output:1 --property present-value --type float32 --value 21.5
-  bacnet-cli write --device-id 1234 --object analog-output:1 --property present-value --type float32 --value 21.5 --yes
-  bacnet-cli watch --device-id 1234 --object analog-input:1 --property present-value --interval 2s --format jsonl
-  bacnet-cli routers
-  bacnet-cli completions zsh
-
-Commands:
-  init-config       Write a starter YAML config file
-  validate-config  Validate local config without opening a socket
-  test-connection  Open BACnet/IP and require a device response
-  status           Alias for test-connection
-  discover         Send Who-Is and list I-Am responses
-  read             Read one property from one BACnet object
-  objects          Read a device object list with names and descriptions
-  write            Write one property; dry-run unless --yes is supplied
-  watch            Poll one property repeatedly
-  routers          Send Who-Is-Router-To-Network
-  completions      Generate Bash or Zsh completion scripts
-  version          Print version information
-
-Global flags:
-  --config       YAML config file, defaults to config.yaml
-  --profile      Config profile name
-  --interface    Local interface, for example en0 or eth0
-  --local-ip     Local IPv4 address; alternative to --interface
-  --port         Local BACnet/IP UDP port, default 47808
-  --subnet-cidr  Local IPv4 subnet prefix length
-  --timeout      Request timeout
-  --format       snapshots: table, text, json, csv; streams: text, jsonl, csv
-  --verbose      Print high-level connection decisions
-  --debug        Enable lower-level debug logging
-
-Target flags:
-  --device-id       BACnet device instance; required for read/write/objects/watch
-  --device-address  Device IPv4 address; omitted to discover by device id
-  --device-port     Device BACnet/IP UDP port
-  --network         BACnet network number
-  --mstp-mac        Routed MS/TP MAC address
-  --max-apdu        Device maximum APDU length
-  --segmentation    Device segmentation mode`)
+	a.writeRegistryUsage()
 }
 
 func (a *App) newFlagSet(name string) *flag.FlagSet {
