@@ -7,7 +7,16 @@ import (
 	"testing"
 
 	"github.com/DishanRajapaksha/bacnet-cli/internal/bacnetclient"
+	"github.com/DishanRajapaksha/industrial-cli-kit/contracttest"
 )
+
+func TestSharedCommandContract(t *testing.T) {
+	contracttest.Baseline(t, func(args ...string) contracttest.Result {
+		var out, errOut bytes.Buffer
+		code := NewAppWithFactory(&out, &errOut, &fakeFactory{client: fakeClient{}}).Run(args)
+		return contracttest.Result{Code: code, Stdout: out.String(), Stderr: errOut.String()}
+	})
+}
 
 type fakeFactory struct {
 	opened int
