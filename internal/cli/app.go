@@ -16,18 +16,19 @@ import (
 	"github.com/DishanRajapaksha/bacnet-cli/internal/bacnetclient"
 	"github.com/DishanRajapaksha/bacnet-cli/internal/config"
 	"github.com/DishanRajapaksha/bacnet-cli/internal/output"
+	"github.com/DishanRajapaksha/industrial-cli-kit/exitcode"
 )
 
 const (
 	appName           = "bacnet-cli"
-	exitSuccess       = 0
-	exitGeneralError  = 1
-	exitConfigError   = 2
-	exitConnection    = 3
-	exitRequestError  = 4
-	exitWriteRejected = 7
-	exitTimeout       = 8
-	exitOutputError   = 9
+	exitSuccess       = int(exitcode.Success)
+	exitGeneralError  = int(exitcode.General)
+	exitConfigError   = int(exitcode.Config)
+	exitConnection    = int(exitcode.Connection)
+	exitRequestError  = int(exitcode.Request)
+	exitWriteRejected = int(exitcode.Rejected)
+	exitTimeout       = int(exitcode.Timeout)
+	exitOutputError   = int(exitcode.Output)
 )
 
 type App struct {

@@ -14,6 +14,7 @@ import (
 	"github.com/DishanRajapaksha/bacnet-cli/internal/bacnetclient"
 	"github.com/DishanRajapaksha/bacnet-cli/internal/devicemap"
 	"github.com/DishanRajapaksha/bacnet-cli/internal/output"
+	"github.com/DishanRajapaksha/industrial-cli-kit/safety"
 )
 
 func (a *App) devices(args []string) error {
@@ -99,8 +100,9 @@ func (a *App) writePoint(args []string) error {
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}
-	if *dryRun && *yes {
-		return fmt.Errorf("%w: --dry-run and --yes cannot be used together", bacnetclient.ErrValidation)
+	mode, err := safety.Resolve(*yes, *dryRun)
+	if err != nil {
+		return fmt.Errorf("%w: %v", bacnetclient.ErrValidation, err)
 	}
 	if *priority > 16 {
 		return fmt.Errorf("%w: --priority must be between 1 and 16", bacnetclient.ErrValidation)
@@ -139,9 +141,9 @@ func (a *App) writePoint(args []string) error {
 		Priority:   writePriority,
 		Value:      value,
 		ValueType:  valueType,
-		DryRun:     !*yes,
+		DryRun:     mode == safety.DryRun,
 	}
-	if !*yes {
+	if mode == safety.DryRun {
 		return renderPointWritePlan(a.out, cfg.Output.Format, plan)
 	}
 	client, _, err := a.open(common)
